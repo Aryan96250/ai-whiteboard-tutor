@@ -1,5 +1,5 @@
-# Project source bundle
+# Source bundle status
 
-The full source project is available in the downloadable archive supplied alongside this repository. This file is a placeholder index pending the individual source file commits.
+The full LearnBoard AI source has now been committed as individual files in this repository.
 
-Do not put secrets in this repository.
+Start with the root README.md for setup and deployment instructions. The application source lives in client/ and server/.
