@@ -1,0 +1,8 @@
+[build]
+  command = "npm install && npm run build"
+  publish = "client/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# The Express API is hosted separately. Set VITE_API_URL to its public base URL ending in /api.
