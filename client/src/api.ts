@@ -24,5 +24,5 @@ export interface ImprovementProposal {
   risks: string[];
 }
 
-export const analyseImprovement = (request: string, currentContext?: string) =>
-  request<ImprovementProposal>('/improve', { request, currentContext });
+export const analyseImprovement = (requestText: string, currentContext?: string) =>
+  request<ImprovementProposal>('/improve', { request: requestText, currentContext });
