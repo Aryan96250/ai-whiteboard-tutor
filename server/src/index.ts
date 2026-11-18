@@ -104,6 +104,34 @@ app.post('/api/lesson', async (req, res) => {
   }
 });
 
+
+const improvementSchema = z.object({
+  title: z.string().min(3).max(100),
+  category: z.enum(['UI/UX','AI quality','Whiteboard','Audio','Learning','History','Languages','Performance','Other']),
+  impact: z.enum(['Low','Medium','High']),
+  summary: z.string().min(10).max(500),
+  implementationPlan: z.array(z.string().min(3).max(240)).min(2).max(7),
+  acceptanceCriteria: z.array(z.string().min(3).max(180)).min(2).max(6),
+  risks: z.array(z.string().min(3).max(180)).max(4),
+});
+
+app.post('/api/improve', async (req, res) => {
+  const input = z.object({
+    request: z.string().trim().min(8).max(1200),
+    currentContext: z.string().max(500).optional(),
+  }).safeParse(req.body);
+  if (!input.success) return res.status(400).json({ error: 'Describe an improvement in at least 8 characters (maximum 1,200).' });
+  const prompt = `You are a senior product manager and software architect reviewing an improvement request for LearnBoard AI, an AI-powered interactive whiteboard tutor built with React, TypeScript, Express, and AI model APIs. Do not claim the change is already implemented. Turn the user's request into a practical, safe implementation proposal. Prefer accessible, responsive, privacy-conscious and low-cost solutions. Never recommend silently changing production code or exposing API keys. User request: "${input.data.request}". Current context: "${input.data.currentContext || 'No additional context supplied'}". Return ONLY valid JSON with this exact shape: {"title":"...","category":"UI/UX|AI quality|Whiteboard|Audio|Learning|History|Languages|Performance|Other","impact":"Low|Medium|High","summary":"...","implementationPlan":["..."],"acceptanceCriteria":["..."],"risks":["..."]}. Keep steps actionable and testable.`;
+  try {
+    const raw = await callAI(prompt, true);
+    const proposal = improvementSchema.parse(JSON.parse(raw));
+    res.json(proposal);
+  } catch (error) {
+    console.error('Improvement analysis failed:', error);
+    res.status(502).json({ error: error instanceof Error ? error.message : 'Could not analyse this improvement. Please try again.' });
+  }
+});
+
 app.post('/api/ask', async (req, res) => {
   const input = z.object({ topic: z.string().min(2).max(180), question: z.string().trim().min(2).max(600), lesson: z.object({ summary: z.string().max(320), segments: z.array(z.object({ title: z.string(), narration: z.string().max(1200) })).max(10) }) }).safeParse(req.body);
   if (!input.success) return res.status(400).json({ error: 'Please enter a question under 600 characters.' });
