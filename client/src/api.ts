@@ -14,3 +14,15 @@ async function request<T>(path: string, payload: unknown): Promise<T> {
 export const generateLesson = (topic: string) => request<Lesson>('/lesson', { topic });
 export const askTutor = (topic: string, lesson: Lesson, question: string) =>
   request<{ answer: string }>('/ask', { topic, lesson, question });
+export interface ImprovementProposal {
+  title: string;
+  category: 'UI/UX' | 'AI quality' | 'Whiteboard' | 'Audio' | 'Learning' | 'History' | 'Languages' | 'Performance' | 'Other';
+  impact: 'Low' | 'Medium' | 'High';
+  summary: string;
+  implementationPlan: string[];
+  acceptanceCriteria: string[];
+  risks: string[];
+}
+
+export const analyseImprovement = (request: string, currentContext?: string) =>
+  request<ImprovementProposal>('/improve', { request, currentContext });
