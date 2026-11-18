@@ -18,7 +18,7 @@ const lessonSchema = z.object({
     board: z.array(z.discriminatedUnion('type', [
       z.object({ id: z.string(), type: z.literal('text'), x: z.number().min(20).max(950), y: z.number().min(30).max(570), text: z.string().min(1).max(90), color: z.string().optional(), size: z.number().min(12).max(42).optional(), align: z.enum(['left','center','right']).optional() }),
       z.object({ id: z.string(), type: z.literal('circle'), x: z.number().min(80).max(920), y: z.number().min(80).max(540), radius: z.number().min(12).max(58), color: z.string().optional(), fill: z.string().optional(), label: z.string().optional() }),
-      z.object({ id: z.string(), type: z.literal('rect'), x: z.number().min(20).max(760), y: z.number().min(30).max(500), width: z.number().min(20).max(220), height: z.number().min(20).max(130), color: z.string().optional(), fill: z.string().optional(), label: z.string().optional() }),
+      z.object({ id: z.string(), type: z.literal('rect'), x: z.number().min(20).max(760), y: z.number().min(30).max(500), width: z.number().min(1).max(1000), height: z.number().min(1).max(620), color: z.string().optional(), fill: z.string().optional(), label: z.string().optional() }),
       z.object({ id: z.string(), type: z.enum(['line','arrow']), x1: z.number().min(20).max(950), y1: z.number().min(30).max(570), x2: z.number().min(20).max(950), y2: z.number().min(30).max(570), color: z.string().optional(), width: z.number().optional() }),
       z.object({ id: z.string(), type: z.literal('formula'), x: z.number().min(20).max(950), y: z.number().min(30).max(570), text: z.string().min(1).max(90), color: z.string().optional(), size: z.number().min(12).max(42).optional() }),
     ])).max(24),
