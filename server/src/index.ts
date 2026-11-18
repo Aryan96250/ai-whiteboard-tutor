@@ -72,7 +72,7 @@ async function callOpenRouter(prompt: string, jsonOutput = true): Promise<string
   }
   const text = payload?.choices?.[0]?.message?.content || '';
   if (!text) throw new Error('OpenRouter returned an empty response.');
-  return String(text).replace(/^\`\`\`(?:json)?\\s*/i, '').replace(/\\s*\`\`\`$/, '').trim();
+  return String(text).replace(/^\`\`\`(?:json)?\s*/i, '').replace(/\s*\`\`\`$/, '').trim();
 }
 
 async function callAI(prompt: string, jsonOutput = true): Promise<string> {
