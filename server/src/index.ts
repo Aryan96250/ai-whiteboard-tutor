@@ -62,7 +62,6 @@ async function callOpenRouter(prompt: string, jsonOutput = true): Promise<string
       model: process.env.OPENROUTER_MODEL || 'openrouter/free',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.65,
-      ...(jsonOutput ? { response_format: { type: 'json_object' } } : {}),
     }),
   });
   const payload = await response.json().catch(() => ({})) as any;
