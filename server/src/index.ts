@@ -132,6 +132,30 @@ app.post('/api/improve', async (req, res) => {
   }
 });
 
+
+app.post('/api/revise', async (req, res) => {
+  const input = z.object({
+    lesson: lessonSchema,
+    request: z.string().trim().min(8).max(800),
+  }).safeParse(req.body);
+  if (!input.success) return res.status(400).json({ error: 'Provide the current lesson and an improvement request of at least 8 characters.' });
+  const prompt = `You are improving an existing visual teaching lesson. Preserve factual accuracy and the original topic. Apply the learner's requested change while keeping the lesson structure and schema valid. Keep 4-10 segments, 75-180 seconds total, narration around 220-280 words total, and 2-5 clear, well-spaced board elements per segment. Board canvas is 1000x620. Text/formula font size 16-38; circle radius 18-55; rectangles width 70-220 and height 45-130; line width 2-4. Use only pale fills (#efeeff, #e8f7f3, #fff1e6, #f1f4f8), dark colours only for outlines/text. Never overlap shapes or create large dark blocks. Supported board element types are text, formula, circle, rect, arrow, line with the same fields as the supplied lesson. Return ONLY valid JSON matching the exact lesson schema. User request: "${input.data.request}". Existing lesson JSON: ${JSON.stringify(input.data.lesson)}`;
+  try {
+    const raw = await callAI(prompt, true);
+    const revised = lessonSchema.parse(JSON.parse(raw));
+    const ordered = [...revised.segments].sort((a, b) => a.start - b.start);
+    if (ordered[0].start !== 0) throw new Error('Revised lesson timeline is invalid. Please retry.');
+    for (let i = 0; i < ordered.length; i++) {
+      if (ordered[i].end <= ordered[i].start || (i > 0 && ordered[i].start < ordered[i - 1].end - 0.1)) throw new Error('Revised lesson timeline overlaps. Please retry.');
+    }
+    if (ordered.at(-1)!.end > 180) throw new Error('Revised lesson is too long. Please retry.');
+    res.json({ ...revised, duration: ordered.at(-1)!.end, segments: ordered });
+  } catch (error) {
+    console.error('Lesson revision failed:', error);
+    res.status(502).json({ error: error instanceof Error ? error.message : 'Could not improve this lesson.' });
+  }
+});
+
 app.post('/api/ask', async (req, res) => {
   const input = z.object({ topic: z.string().min(2).max(180), question: z.string().trim().min(2).max(600), lesson: z.object({ summary: z.string().max(320), segments: z.array(z.object({ title: z.string(), narration: z.string().max(1200) })).max(10) }) }).safeParse(req.body);
   if (!input.success) return res.status(400).json({ error: 'Please enter a question under 600 characters.' });
