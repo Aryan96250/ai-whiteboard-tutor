@@ -80,4 +80,6 @@ app.post('/api/ask', async (req, res) => {
   }
 });
 
-app.listen(port, () => console.log(`LearnBoard AI API listening on ${port}`));
+if (!process.env.VERCEL) app.listen(port, () => console.log(`LearnBoard AI API listening on ${port}`));
+
+export default app;
