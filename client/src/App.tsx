@@ -13,13 +13,20 @@ const suggestions = [
 const fmt = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
 export default function App() {
-  const [topic, setTopic] = useState('');
-  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [savedSession] = useState<{ lesson: Lesson | null; messages: ChatMessage[] }>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('learnboard-last-session') || '{"lesson":null,"messages":[]}');
+    } catch {
+      return { lesson: null, messages: [] };
+    }
+  });
+  const [topic, setTopic] = useState(savedSession.lesson?.topic || '');
+  const [lesson, setLesson] = useState<Lesson | null>(savedSession.lesson);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(savedSession.messages);
   const [question, setQuestion] = useState('');
   const [asking, setAsking] = useState(false);
   const [muted, setMuted] = useState(false);
