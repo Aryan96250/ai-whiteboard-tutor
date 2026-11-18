@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronDown, CircleHelp, Clock3, GraduationCap, Headphones, Lightbulb, LoaderCircle, MessageCircle, Pause, Play, Plus, RotateCcw, Send, Settings2, Sparkles, Volume2, VolumeX, WandSparkles, X } from 'lucide-react';
-import { askTutor, generateLesson } from './api';
+import { analyseImprovement, askTutor, generateLesson, reviseLesson, type ImprovementProposal } from './api';
 import Whiteboard from './Whiteboard';
-import type { Lesson } from './types';
+import type { BoardElement, Lesson } from './types';
 
 interface ChatMessage { role: 'user' | 'assistant'; text: string; }
 const suggestions = [
@@ -23,6 +23,7 @@ export default function App() {
   const [topic, setTopic] = useState(savedSession.lesson?.topic || '');
   const [lesson, setLesson] = useState<Lesson | null>(savedSession.lesson);
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState('');
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -32,11 +33,32 @@ export default function App() {
   const [muted, setMuted] = useState(false);
   const [voiceRate, setVoiceRate] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
+  const [showImprove, setShowImprove] = useState(false);
+  const [improveRequest, setImproveRequest] = useState('');
+  const [proposal, setProposal] = useState<ImprovementProposal | null>(null);
+  const [analysingImprovement, setAnalysingImprovement] = useState(false);
+  const [applyingImprovement, setApplyingImprovement] = useState(false);
+  const [showDiagramEditor, setShowDiagramEditor] = useState(false);
+  const [selectedElementId, setSelectedElementId] = useState('');
+  const [editLabel, setEditLabel] = useState('');
+  const [editColor, setEditColor] = useState('#5256d8');
+  const [editX, setEditX] = useState(100);
+  const [editY, setEditY] = useState(100);
   const timerRef = useRef<number | null>(null);
   const lastSpokenRef = useRef<string>('');
 
   const activeSegment = useMemo(() => lesson?.segments.find((s) => elapsed >= s.start && elapsed < s.end) || lesson?.segments.filter((s) => elapsed >= s.start).at(-1) || null, [lesson, elapsed]);
   const visibleElements = useMemo(() => lesson?.segments.filter((s) => elapsed >= s.start).flatMap((s) => s.board) || [], [lesson, elapsed]);
+  const editorSegment = lesson?.segments.find((s) => s.id === (activeSegment?.id || lesson.segments[0]?.id));
+  const editorElements = editorSegment?.board || [];
+  const selectedElement = editorElements.find((item) => item.id === selectedElementId) || editorElements[0] || null;
+  const loadingStages = ['Analysing your topic', 'Planning the lesson', 'Designing visual diagrams', 'Preparing narration', 'Checking lesson quality'];
+
+  useEffect(() => {
+    if (!loading) { setLoadingStep(0); return; }
+    const timer = window.setInterval(() => setLoadingStep((step) => Math.min(step + 1, 4)), 2600);
+    return () => window.clearInterval(timer);
+  }, [loading]);
 
   useEffect(() => {
     if (!playing || !lesson) return;
@@ -63,6 +85,19 @@ export default function App() {
 
   useEffect(() => () => { window.speechSynthesis?.cancel(); if (timerRef.current) window.clearInterval(timerRef.current); }, []);
 
+  useEffect(() => {
+    try { localStorage.setItem('learnboard-last-session', JSON.stringify({ lesson, messages })); }
+    catch { /* Storage may be unavailable or full; the current lesson remains usable. */ }
+  }, [lesson, messages]);
+
+  useEffect(() => {
+    if (!selectedElement) return;
+    setEditLabel('text' in selectedElement ? selectedElement.text : ('label' in selectedElement ? selectedElement.label || '' : ''));
+    setEditColor(selectedElement.color || '#5256d8');
+    setEditX('x' in selectedElement ? selectedElement.x : selectedElement.x1);
+    setEditY('y' in selectedElement ? selectedElement.y : selectedElement.y1);
+  }, [selectedElementId, activeSegment?.id, lesson]);
+
   const stopPlayback = () => { setPlaying(false); window.speechSynthesis?.cancel(); };
   const startPlayback = () => {
     if (!lesson) return;
@@ -80,7 +115,7 @@ export default function App() {
     const clean = value.trim();
     if (!clean) { setError('Enter a topic to start your lesson.'); return; }
     if (clean.length > 180) { setError('Please keep your topic under 180 characters.'); return; }
-    setLoading(true); setError(''); stopPlayback(); setElapsed(0); setMessages([]); lastSpokenRef.current = '';
+    setLoading(true); setLoadingStep(0); setError(''); stopPlayback(); setElapsed(0); setMessages([]); lastSpokenRef.current = '';
     try {
       const result = await generateLesson(clean);
       setLesson(result); setTopic(clean); setElapsed(0);
