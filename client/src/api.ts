@@ -26,3 +26,7 @@ export interface ImprovementProposal {
 
 export const analyseImprovement = (requestText: string, currentContext?: string) =>
   request<ImprovementProposal>('/improve', { request: requestText, currentContext });
+
+
+export const reviseLesson = (lesson: Lesson, requestText: string) =>
+  request<Lesson>('/revise', { lesson, request: requestText });
