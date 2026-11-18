@@ -134,6 +134,40 @@ export default function App() {
     } finally { setAsking(false); }
   };
 
+  const analyseRequestedImprovement = async () => {
+    if (!lesson || improveRequest.trim().length < 8) return;
+    setAnalysingImprovement(true); setProposal(null); setError('');
+    try {
+      const result = await analyseImprovement(improveRequest, 'Lesson topic: ' + lesson.topic + '. Summary: ' + lesson.summary + '. Segments: ' + lesson.segments.length + '.');
+      setProposal(result);
+    } catch (err) { setError(err instanceof Error ? err.message : 'Could not analyse that improvement.'); }
+    finally { setAnalysingImprovement(false); }
+  };
+
+  const applyRequestedImprovement = async () => {
+    if (!lesson || !improveRequest.trim()) return;
+    setApplyingImprovement(true); setError('');
+    try {
+      const revised = await reviseLesson(lesson, improveRequest);
+      setLesson(revised); setElapsed(0); stopPlayback(); lastSpokenRef.current = '';
+      setMessages((old) => [...old, { role: 'assistant', text: 'I updated the lesson: ' + improveRequest }]);
+      setProposal(null); setImproveRequest('');
+    } catch (err) { setError(err instanceof Error ? err.message : 'Could not apply the improvement.'); }
+    finally { setApplyingImprovement(false); }
+  };
+
+  const saveDiagramEdit = () => {
+    if (!lesson || !selectedElement || !editorSegment) return;
+    const updated = { ...selectedElement, ...(('text' in selectedElement) ? { text: editLabel } : ('label' in selectedElement) ? { label: editLabel } : {}), color: editColor, ...(('x' in selectedElement) ? { x: editX, y: editY } : { x1: editX, y1: editY }) } as BoardElement;
+    setLesson({ ...lesson, segments: lesson.segments.map((segment) => segment.id !== editorSegment.id ? segment : { ...segment, board: segment.board.map((item) => item.id === selectedElement.id ? updated : item) }) });
+  };
+
+  const deleteDiagramElement = () => {
+    if (!lesson || !selectedElement || !editorSegment) return;
+    setLesson({ ...lesson, segments: lesson.segments.map((segment) => segment.id !== editorSegment.id ? segment : { ...segment, board: segment.board.filter((item) => item.id !== selectedElement.id) }) });
+    setSelectedElementId('');
+  };
+
   const openSuggestions = () => { setLesson(null); stopPlayback(); setMessages([]); setElapsed(0); setError(''); };
 
   return (
